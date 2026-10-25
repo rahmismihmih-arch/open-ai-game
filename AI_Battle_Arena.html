@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Battle Arena</title>
+<style>
+:root{--bg:#080d1c;--panel:#101a30;--line:#263858;--cyan:#50f3e3;--pink:#ff4da6;--gold:#ffd166;--muted:#9aabc8}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#17284b 0,#080d1c 60%);color:#f2f7ff;font:15px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}
+button,input{font:inherit}button{cursor:pointer;border:1px solid #3c5c85;background:#1b3153;color:#fff;border-radius:10px;padding:10px 14px;font-weight:750}button:hover{filter:brightness(1.2)}button.primary{background:linear-gradient(100deg,#13bdb5,#4b74ff);border:0;color:#041421}button:disabled{opacity:.45;cursor:not-allowed}
+.wrap{max-width:1100px;margin:auto;padding:22px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.brand{font-size:clamp(22px,4vw,34px);font-weight:950;letter-spacing:.02em}.brand span{color:var(--cyan)}.pill{border:1px solid #345071;color:var(--cyan);border-radius:999px;padding:5px 10px;font-size:12px;font-weight:800}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:16px;margin-top:20px}.panel{background:linear-gradient(145deg,#101a30f5,#0b1326f5);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 16px 45px #0003}.arenaBox{position:relative}.arenaHead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}.arenaHead h2{margin:0;font-size:18px}.stats{display:flex;gap:8px;flex-wrap:wrap}.stat{background:#091226;border:1px solid #233957;border-radius:9px;padding:6px 9px;font-size:12px;color:var(--muted)}.stat b{color:#fff}.canvasWrap{position:relative;width:100%;aspect-ratio:1.35;background:#071020;border:1px solid #284366;border-radius:13px;overflow:hidden}canvas{display:block;width:100%;height:100%;touch-action:none}.overlay{position:absolute;inset:0;background:#061022dd;display:flex;align-items:center;justify-content:center;padding:18px;text-align:center}.overlay.hidden{display:none}.overlayCard{max-width:420px}.overlay h2{font-size:28px;margin:0 0 8px}.overlay p{color:#b6c6df}.formrow{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px}.formrow input{min-width:0;width:160px;background:#081226;color:white;border:1px solid #365174;border-radius:10px;padding:11px}.side h3{margin:0 0 12px}.section{margin-bottom:18px}.section p{color:var(--muted);font-size:13px}.roomCode{font-size:28px;letter-spacing:.17em;font-weight:950;color:var(--gold);margin:4px 0 10px}.players{display:grid;gap:8px}.player{display:flex;align-items:center;gap:9px;background:#0a1428;border:1px solid #1f3452;border-radius:10px;padding:9px}.dot{width:11px;height:11px;border-radius:50%;flex:none}.playerName{flex:1;overflow:hidden;text-overflow:ellipsis}.small{font-size:12px;color:var(--muted)}.leaderRow{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #20314c}.leaderRow:last-child{border:0}.hint{font-size:12px;color:#91a6c7;margin-top:10px}.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.bottom{color:#7186a8;font-size:12px;text-align:center;padding:18px 0}.toast{min-height:22px;color:var(--cyan);font-size:13px;margin-top:8px}.mobileHelp{display:none}
+@media(max-width:800px){.layout{grid-template-columns:1fr}.side{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.panel{padding:12px}.canvasWrap{aspect-ratio:1.05}.mobileHelp{display:block}.wrap{padding:12px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top"><div class="brand">AI <span>BATTLE</span> ARENA</div><div class="pill">REAL-TIME ARENA · 2–8 PLAYERS</div></header>
+<div class="layout">
+<main class="panel arenaBox">
+<div class="arenaHead"><h2>Neon Outpost</h2><div class="stats"><div class="stat">TIME <b id="time">03:00</b></div><div class="stat">ALIVE <b id="alive">1</b></div><div class="stat">KOs <b id="kos">0</b></div></div></div>
+<div class="canvasWrap"><canvas id="game" width="900" height="660" aria-label="Battle arena"></canvas>
+<div class="overlay" id="overlay"><div class="overlayCard"><h2 id="overlayTitle">Enter the arena</h2><p id="overlayText">Create a room and invite friends, or join with a room code. This build runs locally until connected to a multiplayer server.</p><div class="formrow"><input id="playerName" maxlength="16" placeholder="Your player name" value="Pilot"><button class="primary" id="createBtn">Create room</button></div><div class="formrow"><input id="joinCode" maxlength="6" placeholder="ROOM CODE"><button id="joinBtn">Join room</button></div><div class="small" id="overlayFoot">Solo practice is available now. Online rooms require deployment with a realtime backend.</div></div></div>
+</div>
+<div class="controls"><button class="primary" id="startBtn">Start practice match</button><button id="dashBtn">Dash (Space)</button><button id="shootBtn">Shoot (click / J)</button><button id="resetBtn">Reset</button></div>
+<div class="mobileHelp small">Move with WASD or arrow keys. Aim with your mouse and click to shoot. On touchscreens, drag on the arena to move and tap Shoot.</div><div class="toast" id="toast"></div>
+</main>
+<aside class="side">
+<section class="panel section"><h3>Room lobby</h3><div class="small">ROOM CODE</div><div class="roomCode" id="roomCode">———</div><div class="controls"><button id="copyBtn">Copy invite code</button><button id="leaveBtn">Leave room</button></div><p id="roomStatus">No room created yet.</p><div class="players" id="players"><div class="player"><span class="dot" style="background:#50f3e3"></span><span class="playerName">You · Pilot</span><span class="small">HOST</span></div></div></section>
+<section class="panel section"><h3>Leaderboard</h3><div id="leaderboard"><div class="leaderRow"><span>1. Pilot</span><b>0</b></div></div><p>Earn points by tagging practice drones. In online play, scores should be validated by the room server.</p></section>
+<section class="panel section"><h3>How to play</h3><p><b>Move:</b> WASD / arrow keys</p><p><b>Aim:</b> Mouse</p><p><b>Shoot:</b> Click or J</p><p><b>Dash:</b> Space</p><p><b>Power-ups:</b> Collect glowing cyan orbs to restore health.</p></section>
+</aside>
+</div>
+<div class="bottom">AI Battle Arena prototype · Room codes are a lobby UI demo, not connected to a live multiplayer server yet.</div>
+</div>
+<script>
+(()=>{
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+const $=id=>document.getElementById(id);
+const W=900,H=660,colors=['#50f3e3','#ff4da6','#ffd166','#a78bfa','#78ff6b','#ff8757','#7db7ff','#f7f7f7'];
+let player={id:0,name:'Pilot',x:450,y:330,r:15,hp:100,score:0,kos:0,color:colors[0],alive:true,cd:0,dash:0};
+let bots=[],bullets=[],orbs=[],walls=[],keys={},mouse={x:600,y:330,down:false},running=false,seconds=180,last=performance.now(),room='',roomPlayers=[],frame=0,practice=false,moveTouch=null;
+function say(s){$('toast').textContent=s}
+function rand(a,b){return a+Math.random()*(b-a)}
+function code(){return Math.random().toString(36).slice(2,8).toUpperCase()}
+function resetArena(){walls=[{x:240,y:140,w:100,h:24},{x:560,y:140,w:100,h:24},{x:240,y:496,w:100,h:24},{x:560,y:496,w:100,h:24},{x:430,y:250,w:40,h:160},{x:110,y:310,w:65,h:24},{x:725,y:310,w:65,h:24}];bullets=[];orbs=[];bots=[];player.x=450;player.y=330;player.hp=100;player.score=0;player.kos=0;player.alive=true;for(let i=0;i<5;i++)spawnBot(i);for(let i=0;i<4;i++)spawnOrb();renderSide()}
+function spawnBot(i){let x,y;do{x=rand(45,W-45);y=rand(45,H-45)}while(Math.hypot(x-player.x,y-player.y)<170);bots.push({id:i+1,name:['Byte','Glitch','Nova','Pixel','Echo'][i],x,y,r:14,hp:60,score:0,kos:0,color:colors[(i+1)%colors.length],alive:true,cd:rand(.4,2),dash:0,phase:rand(0,6)})}
+function spawnOrb(){orbs.push({x:rand(35,W-35),y:rand(35,H-35),r:10,phase:rand(0,7)})}
+function collide(x,y,r){return x<r||x>W-r||y<r||y>H-r||walls.some(w=>x+r>w.x&&x-r<w.x+w.w&&y+r>w.y&&y-r<w.y+w.h)}
+function move(o,dx,dy){let nx=o.x+dx;if(!collide(nx,o.y,o.r))o.x=nx;let ny=o.y+dy;if(!collide(o.x,ny,o.r))o.y=ny;o.x=Math.max(o.r,Math.min(W-o.r,o.x));o.y=Math.max(o.r,Math.min(H-o.r,o.y))}
+function shoot(o,tx,ty){if(o.cd>0||!o.alive)return;let a=Math.atan2(ty-o.y,tx-o.x);bullets.push({x:o.x+Math.cos(a)*(o.r+5),y:o.y+Math.sin(a)*(o.r+5),vx:Math.cos(a)*430,vy:Math.sin(a)*430,owner:o.id,color:o.color,life:1.5});o.cd=.24}
+function allActors(){return [player,...bots]}
+function update(dt){frame++;if(running){seconds-=dt;if(seconds<=0){seconds=0;running=false;showEnd('TIME UP');}for(const o of allActors()){if(!o.alive)continue;o.cd=Math.max(0,o.cd-dt);o.dash=Math.max(0,o.dash-dt)}
+let dx=(keys['d']||keys['arrowright']?1:0)-(keys['a']||keys['arrowleft']?1:0),dy=(keys['s']||keys['arrowdown']?1:0)-(keys['w']||keys['arrowup']?1:0);if(moveTouch){dx=moveTouch.dx;dy=moveTouch.dy}let mag=Math.hypot(dx,dy)||1;move(player,dx/mag*230*dt*(player.dash>0?2.5:1),dy/mag*230*dt*(player.dash>0?2.5:1));if(mouse.down||keys['j'])shoot(player,mouse.x,mouse.y);
+for(const b of bots){if(!b.alive)continue;let a=Math.atan2(player.y-b.y,player.x-b.x);b.phase+=dt;let dist=Math.hypot(player.x-b.x,player.y-b.y);let vx=Math.cos(a),vy=Math.sin(a);if(dist<150){vx=-vx;vy=-vy}move(b,vx*105*dt,vy*105*dt);if(Math.random()<dt*.8)shoot(b,player.x+rand(-60,60),player.y+rand(-60,60));}
+for(let i=bullets.length-1;i>=0;i--){let z=bullets[i];z.x+=z.vx*dt;z.y+=z.vy*dt;z.life-=dt;if(z.life<=0||collide(z.x,z.y,4)){bullets.splice(i,1);continue}let hit=null;for(const o of allActors()){if(!o.alive||o.id===z.owner)continue;if(Math.hypot(o.x-z.x,o.y-z.y)<o.r+4){hit=o;break}}if(hit){hit.hp-=25;bullets.splice(i,1);if(hit.hp<=0){hit.alive=false;let killer=allActors().find(o=>o.id===z.owner);if(killer){killer.score+=100;killer.kos++}if(hit===player){running=false;showEnd('YOU WERE ELIMINATED')}else{setTimeout(()=>{if(running){Object.assign(hit,{x:rand(50,W-50),y:rand(50,H-50),hp:60,alive:true})}},2200)}}}}
+for(let i=orbs.length-1;i>=0;i--){let o=orbs[i];o.phase+=dt;if(Math.hypot(o.x-player.x,o.y-player.y)<o.r+player.r&&player.alive){player.hp=Math.min(100,player.hp+25);orbs.splice(i,1);spawnOrb();say('Energy collected · +25 health')}else for(const b of bots)if(b.alive&&Math.hypot(o.x-b.x,o.y-b.y)<o.r+b.r){b.hp=Math.min(60,b.hp+25);orbs.splice(i,1);spawnOrb();break}}
+if(!bots.some(b=>b.alive)){running=false;showEnd('ARENA CLEARED')}
+renderSide()}
+$('time').textContent=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(Math.floor(seconds%60)).padStart(2,'0');$('alive').textContent=allActors().filter(o=>o.alive).length;$('kos').textContent=player.kos}
+function draw(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#071020';ctx.fillRect(0,0,W,H);ctx.strokeStyle='#152847';ctx.lineWidth=1;for(let x=0;x<W;x+=30){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}for(let y=0;y<H;y+=30){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+for(const w of walls){ctx.fillStyle='#172b4b';ctx.strokeStyle='#37618a';ctx.lineWidth=2;ctx.fillRect(w.x,w.y,w.w,w.h);ctx.strokeRect(w.x,w.y,w.w,w.h);ctx.fillStyle='#50f3e322';ctx.fillRect(w.x+5,w.y+5,w.w-10,3)}
+for(const o of orbs){let pulse=Math.sin(o.phase*4)*2;ctx.shadowBlur=18;ctx.shadowColor='#50f3e3';ctx.fillStyle='#50f3e3';ctx.beginPath();ctx.arc(o.x,o.y,o.r+pulse,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0}
+for(const z of bullets){ctx.shadowBlur=12;ctx.shadowColor=z.color;ctx.fillStyle=z.color;ctx.beginPath();ctx.arc(z.x,z.y,5,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0}
+for(const o of allActors()){if(!o.alive)continue;ctx.shadowBlur=o===player?22:12;ctx.shadowColor=o.color;ctx.fillStyle=o.color;ctx.beginPath();ctx.arc(o.x,o.y,o.r,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='#ffffff';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#091020';ctx.beginPath();ctx.arc(o.x,o.y,5,0,Math.PI*2);ctx.fill();ctx.fillStyle='#dce9ff';ctx.font='13px system-ui';ctx.textAlign='center';ctx.fillText(o.name,o.x,o.y-24);ctx.fillStyle='#26344e';ctx.fillRect(o.x-18,o.y-19,36,4);ctx.fillStyle=o.hp>35?'#50f3e3':'#ff4d6d';ctx.fillRect(o.x-18,o.y-19,36*Math.max(0,o.hp)/(o===player?100:60),4)}
+if(!running){ctx.fillStyle='#07102044';ctx.fillRect(0,0,W,H)}}
+function loop(now){let dt=Math.min(.04,(now-last)/1000);last=now;update(dt);draw();requestAnimationFrame(loop)}
+function renderSide(){const all=allActors().slice().sort((a,b)=>b.score-a.score);$('leaderboard').innerHTML=all.map((o,i)=>`<div class="leaderRow"><span>${i+1}. ${esc(o.name)} ${o.alive?'':'☠'}</span><b>${o.score}</b></div>`).join('');$('players').innerHTML=all.map((o,i)=>`<div class="player"><span class="dot" style="background:${o.color}"></span><span class="playerName">${esc(o.name)}${o===player?' · You':''}</span><span class="small">${o===player?'HOST':o.alive?'IN ARENA':'OUT'}</span></div>`).join('')}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function showEnd(title){$('overlay').classList.remove('hidden');$('overlayTitle').textContent=title;$('overlayText').textContent='Practice match finished. Start another match to play again.';$('overlayFoot').textContent='This is a local prototype; online play needs a deployed realtime backend.';$('startBtn').textContent='Play again'}
+function start(){resetArena();seconds=180;running=true;practice=true;$('overlay').classList.add('hidden');$('startBtn').textContent='Match in progress';$('roomStatus').textContent='Practice match running on this device.';say('Match started — good luck, Pilot!')}
+function makeRoom(){player.name=($('playerName').value.trim()||'Pilot').slice(0,16);room=code();$('roomCode').textContent=room;$('roomStatus').textContent='Room created locally. Share the code for the UI demo; online joining is not connected.';$('overlayTitle').textContent='Room ready: '+room;$('overlayText').textContent='Your lobby is ready in this prototype. Create a shareable invite after deploying with a realtime backend.';$('overlayFoot').textContent='Room code copying works; another browser will not join this local prototype.';renderSide();say('Room '+room+' created')}
+function joinRoom(){const c=$('joinCode').value.trim().toUpperCase();if(c.length<4){say('Enter a valid room code.');return}say('Code '+c+' entered. Online joining needs the multiplayer backend deployment.');$('roomStatus').textContent='Join requested for '+c+' — networking is not connected in this prototype.'}
+function leave(){room='';$('roomCode').textContent='———';$('roomStatus').textContent='No room created yet.';say('Left room')}
+$('createBtn').onclick=makeRoom;$('joinBtn').onclick=joinRoom;$('startBtn').onclick=start;$('resetBtn').onclick=()=>{running=false;resetArena();seconds=180;$('overlay').classList.remove('hidden');$('overlayTitle').textContent='Ready for another round?';$('overlayText').textContent='Start practice or create a room.'};$('leaveBtn').onclick=leave;$('copyBtn').onclick=async()=>{if(!room){say('Create a room first.');return}try{await navigator.clipboard.writeText(room);say('Room code copied: '+room)}catch{say('Room code: '+room)}};
+$('dashBtn').onclick=()=>{if(running&&player.dash<=0){player.dash=.18;say('Dash!')}};$('shootBtn').onclick=()=>{if(running)shoot(player,mouse.x,mouse.y)};
+document.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.code==='Space'){e.preventDefault();if(running)player.dash=.18}});document.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+function point(e){let r=canvas.getBoundingClientRect();mouse.x=(e.clientX-r.left)/r.width*W;mouse.y=(e.clientY-r.top)/r.height*H}
+canvas.addEventListener('pointermove',point);canvas.addEventListener('pointerdown',e=>{point(e);if(e.pointerType==='mouse')mouse.down=true;else{moveTouch={dx:Math.sign(mouse.x-player.x),dy:Math.sign(mouse.y-player.y)}}});canvas.addEventListener('pointerup',e=>{mouse.down=false;moveTouch=null});canvas.addEventListener('pointerleave',()=>mouse.down=false);
+resetArena();requestAnimationFrame(loop);
+})();
+</script>
+</body></html>
